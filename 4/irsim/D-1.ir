@@ -1,0 +1,280 @@
+FUNCTION mod :
+PARAM v0
+PARAM v1
+t3 := v0 / v1
+t2 := t3 * v1
+t0 := v0 - t2
+RETURN t0
+FUNCTION do_work :
+PARAM v2
+v4 := #5
+ARG v4
+ARG v2
+v2 := CALL mod
+t7 := #2
+v5 := t7 * v2
+v6 := v2 + v2
+t11 := #4
+t12 := #4
+v7 := t11 * t12
+t13 := v7 + v6
+v5 := t13 + v5
+t24 := #1
+t21 := v5 + t24
+t26 := #1
+t22 := v6 + t26
+t19 := t21 * t22
+t28 := #1
+t20 := v7 + t28
+t18 := t19 * t20
+v6 := v5 + t18
+t36 := #1
+t34 := v5 + t36
+t31 := v5 * t34
+t40 := #1
+t37 := v6 + t40
+t42 := #1
+t38 := v6 + t42
+t32 := t37 * t38
+t29 := t31 + t32
+t46 := #1
+t43 := v7 + t46
+t48 := #1
+t44 := v7 + t48
+t30 := t43 * t44
+v7 := t29 + t30
+t54 := #1
+t51 := v5 + t54
+t56 := #1
+t52 := v6 + t56
+t49 := t51 + t52
+t58 := #1
+t50 := v7 + t58
+v5 := t49 + t50
+t60 := v5 + v6
+t59 := t60 + v7
+RETURN t59
+FUNCTION main :
+v8 := #2
+v9 := #5
+v10 := #10
+t66 := #3
+t67 := v9 * v10
+t64 := t66 * t67
+t70 := #100
+t71 := #5
+t65 := t70 / t71
+v11 := t64 - t65
+t74 := #42
+t76 := v8 * v9
+t83 := v9 * v10
+t80 := v8 * t83
+t81 := #32
+t77 := t80 / t81
+t75 := t76 * t77
+t72 := t74 - t75
+t73 := #100
+v12 := t72 + t73
+t102 := #3
+t103 := #4
+t100 := t102 * t103
+t101 := #5
+t98 := t100 * t101
+t99 := #10
+t96 := t98 - t99
+t105 := v8 * v9
+t106 := #3
+t104 := t105 * t106
+t97 := #0 - t104
+t94 := t96 - t97
+t95 := v8 * v9
+t92 := t94 - t95
+t93 := v8 * v9
+t90 := t92 - t93
+t91 := #3
+t88 := t90 + t91
+t89 := #2
+t86 := t88 + t89
+t87 := #1
+v13 := t86 + t87
+v14 := #0
+v15 := #0
+v16 := v8 * v9
+DEC v17 40
+DEC v18 40
+LABEL label1 :
+IF v14 < v13 GOTO label2
+GOTO label3
+LABEL label2 :
+t117 := #1
+v15 := v15 + t117
+ARG v16
+ARG v14
+t118 := CALL mod
+t119 := t118 * #4
+t120 := &v17 + t119 
+*t120 := v11
+t122 := #1
+v11 := v11 + t122
+t124 := #1
+v14 := v14 + t124
+GOTO label1
+LABEL label3 :
+v14 := #0
+LABEL label4 :
+t125 := #100
+IF v14 < t125 GOTO label5
+GOTO label6
+LABEL label5 :
+ARG v16
+ARG v14
+t126 := CALL mod
+t127 := t126 * #4
+t128 := &v18 + t127 
+*t128 := v11
+t130 := #1
+v11 := v11 + t130
+t132 := #1
+v14 := v14 + t132
+GOTO label4
+LABEL label6 :
+v14 := #0
+LABEL label7 :
+v26 := #10
+ARG v26
+v25 := CALL do_work
+v27 := #30
+ARG v27
+ARG v25
+t133 := CALL mod
+IF v14 < t133 GOTO label8
+GOTO label9
+LABEL label8 :
+ARG v16
+ARG v14
+t134 := CALL mod
+t135 := t134 * #4
+t136 := &v17 + t135 
+v12 := *t136
+t143 := #1
+t141 := #0 - t143
+t140 := t141 * v14
+t137 := v15 + t140
+ARG v12
+t138 := CALL do_work
+v15 := t137 + t138
+t146 := #2
+t145 := t146 * v14
+v12 := v12 + t145
+t150 := #2
+t149 := t150 * v14
+v12 := v12 + t149
+t154 := #2
+t153 := t154 * v14
+v12 := v12 + t153
+v32 := #10
+ARG v32
+v31 := CALL do_work
+v33 := #10
+ARG v33
+ARG v31
+t157 := CALL mod
+ARG v12
+v34 := CALL do_work
+v36 := #10
+ARG v36
+ARG v34
+t156 := CALL mod
+IF t157 == t156 GOTO label10
+GOTO label11
+LABEL label10 :
+v38 := #10
+ARG v38
+ARG v12
+v12 := CALL mod
+GOTO label12
+LABEL label11 :
+v40 := #20
+ARG v40
+ARG v12
+v12 := CALL mod
+LABEL label12 :
+v41 := v12 * v12
+ARG v16
+ARG v14
+t160 := CALL mod
+t161 := t160 * #4
+t162 := &v17 + t161 
+*t162 := v41
+t164 := #1
+v14 := v14 + t164
+GOTO label7
+LABEL label9 :
+t169 := #0
+t170 := t169 * #4
+t171 := &v17 + t170 
+t168 := *t171
+t165 := v12 + t168
+t172 := #1
+t173 := t172 * #4
+t174 := &v17 + t173 
+t166 := *t174
+v12 := t165 + t166
+t179 := #0
+t180 := t179 * #4
+t181 := &v17 + t180 
+t178 := *t181
+t175 := v12 + t178
+t182 := #1
+t183 := t182 * #4
+t184 := &v17 + t183 
+t176 := *t184
+v12 := t175 + t176
+t189 := #0
+t190 := t189 * #4
+t191 := &v17 + t190 
+t188 := *t191
+t185 := v12 + t188
+t192 := #1
+t193 := t192 * #4
+t194 := &v17 + t193 
+t186 := *t194
+v12 := t185 + t186
+t199 := #0
+t200 := t199 * #4
+t201 := &v17 + t200 
+t198 := *t201
+t195 := v12 + t198
+t202 := #1
+t203 := t202 * #4
+t204 := &v17 + t203 
+t196 := *t204
+v12 := t195 + t196
+WRITE v12
+t207 := #0
+t208 := t207 * #4
+t209 := &v17 + t208 
+v45 := *t209
+WRITE v45
+t211 := #1
+t212 := t211 * #4
+t213 := &v17 + t212 
+v46 := *t213
+WRITE v46
+t215 := #2
+t216 := t215 * #4
+t217 := &v17 + t216 
+v47 := *t217
+WRITE v47
+t219 := #3
+t220 := t219 * #4
+t221 := &v17 + t220 
+v48 := *t221
+WRITE v48
+t223 := #4
+t224 := t223 * #4
+t225 := &v17 + t224 
+v49 := *t225
+WRITE v49
+t226 := #0
+RETURN t226

@@ -1,0 +1,11 @@
+int mod(int a,int b)
+{
+    return a-(a/b)*b;
+}
+int main()
+{
+    int c=10;
+    int d = 3;
+    int e = mod(c,d);
+    return 0;
+}
