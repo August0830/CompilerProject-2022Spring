@@ -1,9 +1,9 @@
 #include <unistd.h>
 #include <stdio.h>
-#include "intermediate.h"
+#include "instruction.h"
 // #include "node.h"
 #include "syntax.tab.h"
-#define GENINTERCODE
+// #define GENINTERCODE
 
 extern FILE* yyin;
 extern ptrNode root;
@@ -41,15 +41,20 @@ int main(int argc,char**argv){
     init();
     #ifdef GENINTERCODE
     prepareFunc(output);
+    prepareIntermediate(output);
     #else
+    prepareFunc(NULL);
     prepareIntermediate(NULL);
     #endif
-    prepareIntermediate(output);
+    initForInst(output);
     if(lexError == 0 && synError == 0){        
         printNodeTree(root,0);
         traverseTree(root);
         if(!hasStruct)
+        {
             generateInterCode(root);
+            translateInstr();
+        }    
         else
             printf("Cannot translate: Code contains variables or parameters of structure type.\n");
     }

@@ -1,5 +1,5 @@
 #include "intermediate.h"
-#define GENINTERCODE
+// #define GENINTERCODE
 
 #ifdef GENINTERCODE
     #define intercode(code,args...) fprintf(code,args)
@@ -73,9 +73,13 @@ Operand copyOperand(Operand op)
 {
     Operand dst = (Operand)malloc(sizeof(struct Operand_));
     dst->kind = op->kind;
-    if (dst->kind == CONSTANT)
+    if (dst->kind == CONSTANT_F)
     {
         dst->u.val_float = op->u.val_float;
+    }
+    else if(dst->kind == CONSTANT_I)
+    {
+        dst->u.val_int = op->u.val_int;
     }
     else
     {
@@ -108,7 +112,7 @@ void translate_FunDec(Node *funDec)
         //args->fieldVar->reg = param;
         copyReg(&(args->fieldVar->reg), &param);
         InterCode paramCode = (InterCode)malloc(sizeof(InterCode_));
-        paramCode->kind = PARAM;
+        paramCode->kind = I_PARAM;
         paramCode->isBlockStarter=false;
         paramCode->u.par.varName = newString(param->interVarId);
         addCodes(paramCode);
@@ -116,7 +120,7 @@ void translate_FunDec(Node *funDec)
         argsCnt++;
     }
     InterCode funcCode = (InterCode)malloc(sizeof(InterCode_));
-    funcCode->kind = FUNCINFO;
+    funcCode->kind = I_FUNCINFO;
     funcCode->isBlockStarter =true;
     funcCode->u.funInfo.argsCnt = argsCnt;
     funcCode->u.funInfo.funcName = newString(funcInfo->funcName);
@@ -171,14 +175,14 @@ void translate_Exp_Func(Node *Exp, Reg place)
                     ptr = ptr->next;
                     InterCode argCode = (InterCode)malloc(sizeof(InterCode_));
                     argCode->isBlockStarter = false;
-                    argCode->kind = ARG;
+                    argCode->kind = I_ARG;
                     argCode->u.par.varName = newString(ptr->interVarId);
                     addCodes(argCode);
                 }
                 intercode(code, "%s := CALL %s\n", place->interVarId, funcInfo->funcName);
                 InterCode callCode = (InterCode)malloc(sizeof(InterCode));
                 callCode->isBlockStarter = true;
-                callCode->kind = CALL;
+                callCode->kind = I_CALL;
                 callCode->u.callInfo.func = newString(funcInfo->funcName);
                 callCode->u.callInfo.res = copyOperand(place->op);
                 addCodes(callCode);
@@ -199,7 +203,7 @@ void translate_Exp_Func(Node *Exp, Reg place)
             }
             InterCode callCode = (InterCode)malloc(sizeof(InterCode));
             callCode->isBlockStarter = true;
-            callCode->kind = CALL;
+            callCode->kind = I_CALL;
             callCode->u.callInfo.func = newString(funcInfo->funcName);
             callCode->u.callInfo.res = copyOperand(place->op);
             addCodes(callCode);
@@ -277,7 +281,7 @@ void translate_Cond(Node *Exp, InterCode labelTrue, InterCode labelFalse)
             labelTrue->isBlockStarter = true;
             InterCode ific = (InterCode)malloc(sizeof(InterCode_));
             ific->isBlockStarter = true;
-            ific->kind = COND;
+            ific->kind = I_COND;
             ific->u.cond.op1 = copyOperand(t1->op);
             ific->u.cond.op2 = copyOperand(t2->op);
             ific->u.cond.oper = newString(oper);
@@ -287,7 +291,7 @@ void translate_Cond(Node *Exp, InterCode labelTrue, InterCode labelFalse)
             labelFalse->isBlockStarter = true;
             InterCode jump = (InterCode)malloc(sizeof(InterCode_));
             jump->isBlockStarter = true;
-            jump->kind = JMP;
+            jump->kind = I_JMP;
             jump->u.jump.targetCode = labelFalse;
             jump->u.jump.targetLabel = newString(labelFalse->u.label.labelName);
             addCodes(jump);
@@ -295,7 +299,7 @@ void translate_Cond(Node *Exp, InterCode labelTrue, InterCode labelFalse)
         else if (!strcmp(op->name, "AND"))
         {
             InterCode label1 = (InterCode)malloc(sizeof(InterCode_));
-            label1->kind = LABEL;
+            label1->kind = I_LABEL;
             label1->u.label.labelName = newLabel();
             label1->isBlockStarter = false;
             translate_Cond(Exp1, label1, labelFalse);
@@ -307,7 +311,7 @@ void translate_Cond(Node *Exp, InterCode labelTrue, InterCode labelFalse)
         {
             InterCode label1 = (InterCode)malloc(sizeof(InterCode_));
             label1->isBlockStarter = false;
-            label1->kind = LABEL;
+            label1->kind = I_LABEL;
             label1->u.label.labelName = newLabel();
             translate_Cond(Exp1, labelTrue, label1);
             intercode(code, "LABEL %s :\n", label1->u.label.labelName);
@@ -329,10 +333,10 @@ void translate_Cond(Node *Exp, InterCode labelTrue, InterCode labelFalse)
         labelTrue->isBlockStarter = true;
         InterCode ific = (InterCode)malloc(sizeof(InterCode_));
         ific->isBlockStarter = true;
-        ific->kind = COND;
+        ific->kind = I_COND;
         ific->u.cond.op1 = copyOperand(t1->op);
         ific->u.cond.op2 = (Operand)malloc(sizeof(struct Operand_));
-        ific->u.cond.op2->kind = CONSTANT;
+        ific->u.cond.op2->kind = CONSTANT_I;
         ific->u.cond.op2->u.val_int = 0;
         ific->u.cond.oper = newString("!=");
         //test
@@ -342,7 +346,7 @@ void translate_Cond(Node *Exp, InterCode labelTrue, InterCode labelFalse)
         labelFalse->isBlockStarter = true;
         InterCode jump = (InterCode)malloc(sizeof(InterCode_));
         jump->isBlockStarter = true;
-        jump->kind = JMP;
+        jump->kind = I_JMP;
         jump->u.jump.targetCode = labelFalse;
         jump->u.jump.targetLabel = newString(labelFalse->u.label.labelName);
         addCodes(jump);
@@ -379,7 +383,7 @@ void translate_Stmt(Node *Stmt)
         intercode(code, "RETURN %s\n", t1->interVarId);
         InterCode returnCode = (InterCode)malloc(sizeof(InterCode_));
         returnCode->isBlockStarter = true;
-        returnCode->kind = RETURN;
+        returnCode->kind = I_RETURN;
         returnCode->u.par.varName = newString(t1->interVarId);
         addCodes(returnCode);
     }
@@ -387,10 +391,10 @@ void translate_Stmt(Node *Stmt)
     {
         InterCode label1 = (InterCode)malloc(sizeof(InterCode_));
         label1->isBlockStarter = true;
-        label1->kind = LABEL;
+        label1->kind = I_LABEL;
         label1->u.label.labelName = newLabel();
         InterCode label2 = (InterCode)malloc(sizeof(InterCode_));
-        label2->kind = LABEL;
+        label2->kind = I_LABEL;
         label2->u.label.labelName = newLabel();
         Node *exp = child->next->next;
         Node *stmt1 = exp->next->next;
@@ -409,7 +413,7 @@ void translate_Stmt(Node *Stmt)
         {
             InterCode label3 = (InterCode)malloc(sizeof(InterCode_));
             label3->isBlockStarter = false;
-            label3->kind = LABEL;
+            label3->kind = I_LABEL;
             label3->u.label.labelName = newLabel();
             Node *stmt2 = stmt1->next->next;
             translate_Cond(exp, label1, label2);
@@ -420,7 +424,7 @@ void translate_Stmt(Node *Stmt)
             label3->isBlockStarter = true;
             InterCode jmp = (InterCode)malloc(sizeof(InterCode_));
             jmp->isBlockStarter = true;
-            jmp->kind = JMP;
+            jmp->kind = I_JMP;
             jmp->u.jump.targetCode = label3;
             jmp->u.jump.targetLabel = newString(label3->u.label.labelName);
             addCodes(jmp);
@@ -436,15 +440,15 @@ void translate_Stmt(Node *Stmt)
     {
         InterCode label1 = (InterCode)malloc(sizeof(InterCode_));
         label1->isBlockStarter = false;
-        label1->kind = LABEL;
+        label1->kind = I_LABEL;
         label1->u.label.labelName = newLabel();
         InterCode label2 = (InterCode)malloc(sizeof(InterCode_));
         label2->isBlockStarter = false;
-        label2->kind = LABEL;
+        label2->kind = I_LABEL;
         label2->u.label.labelName = newLabel();
         InterCode label3 = (InterCode)malloc(sizeof(InterCode_));
         label3->isBlockStarter = false;
-        label3->kind = LABEL;
+        label3->kind = I_LABEL;
         label3->u.label.labelName = newLabel();
         Node *exp = child->next->next;
         Node *stmt = exp->next->next;
@@ -458,7 +462,7 @@ void translate_Stmt(Node *Stmt)
         label1->isBlockStarter = true;
         InterCode jump = (InterCode)malloc(sizeof(InterCode_));
         jump->isBlockStarter = false;
-        jump->kind = JMP;
+        jump->kind = I_JMP;
         jump->u.jump.targetCode = label1;
         jump->u.jump.targetLabel = newString(label1->u.label.labelName);
         addCodes(jump);
@@ -584,7 +588,7 @@ void translate_VarDec(Node *varDec, Reg place)
         intercode(code, "DEC %s %d\n", place->interVarId, place->size);
         InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
         ic->isBlockStarter = false;
-        ic->kind = DEC;
+        ic->kind = I_DEC;
         ic->u.arr.arr = (Operand)malloc(sizeof(struct Operand_));
         ic->u.arr.arr->kind = GETADDR;
         ic->u.arr.arr->u.var_name = newString(place->interVarId);
@@ -610,7 +614,7 @@ void translate_Exp(Node *Exp, Reg place)
         {
             place = newReg(NULL, newTempName());
             place->op = (Operand)malloc(sizeof(struct Operand_));
-            place->op->kind = CONSTANT;
+            place->op->kind = CONSTANT_I;
             place->op->u.val_int = value;
             //it is a number
         }
@@ -620,9 +624,9 @@ void translate_Exp(Node *Exp, Reg place)
         {
             InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
             ic->isBlockStarter = false;
-            ic->kind = ASSIGN;
+            ic->kind = I_ASSIGN;
             ic->u.assign.right = (Operand)malloc(sizeof(struct Operand_));
-            ic->u.assign.right->kind = CONSTANT;
+            ic->u.assign.right->kind = CONSTANT_I;
             ic->u.assign.right->u.val_int = value;
             ic->u.assign.left = copyOperand(place->op);
             addCodes(ic);
@@ -630,7 +634,7 @@ void translate_Exp(Node *Exp, Reg place)
         else
         {
             place->op = (Operand)malloc(sizeof(struct Operand_));
-            place->op->kind = CONSTANT;
+            place->op->kind = CONSTANT_I;
             place->op->u.val_int = value;
         }
         intercode(code, "%s := #%d\n", place->interVarId, value);
@@ -642,7 +646,7 @@ void translate_Exp(Node *Exp, Reg place)
         {
             place = newReg(NULL, newTempName());
             place->op = (Operand)malloc(sizeof(struct Operand_));
-            place->op->kind = CONSTANT;
+            place->op->kind = CONSTANT_F;
             place->op->u.val_float = atof(child->val.val);
         }
 
@@ -650,9 +654,9 @@ void translate_Exp(Node *Exp, Reg place)
         {
             InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
             ic->isBlockStarter = false;
-            ic->kind = ASSIGN;
+            ic->kind = I_ASSIGN;
             ic->u.assign.right = (Operand)malloc(sizeof(struct Operand_));
-            ic->u.assign.right->kind = CONSTANT;
+            ic->u.assign.right->kind = CONSTANT_F;
             ic->u.assign.right->u.val_int = atof(child->val.val);
             ic->u.assign.left = copyOperand(place->op);
             addCodes(ic);
@@ -660,7 +664,7 @@ void translate_Exp(Node *Exp, Reg place)
         else
         {
             place->op = (Operand)malloc(sizeof(struct Operand_));
-            place->op->kind = CONSTANT;
+            place->op->kind = CONSTANT_F;
             place->op->u.val_float = atof(child->val.val);
         }
         intercode(code, "%s := #%s\n", place->interVarId, child->val.val);
@@ -703,22 +707,22 @@ void translate_Exp(Node *Exp, Reg place)
             if (!strcmp(nextOp->name, "PLUS"))
             {
                 strcpy(op, "+");
-                ic->kind = PLUS;
+                ic->kind = I_PLUS;
             }
             else if (!strcmp(nextOp->name, "SUB"))
             {
                 strcpy(op, "-");
-                ic->kind = SUB;
+                ic->kind = I_SUB;
             }
             else if (!strcmp(nextOp->name, "STAR"))
             {
                 strcpy(op, "*");
-                ic->kind = STAR;
+                ic->kind = I_STAR;
             }
             else if (!strcmp(nextOp->name, "DIV"))
             {
                 strcpy(op, "/");
-                ic->kind = DIV;
+                ic->kind = I_DIV;
             }
 
             ic->u.binop.op1 = copyOperand(t1->op);
@@ -734,11 +738,11 @@ void translate_Exp(Node *Exp, Reg place)
         {
             InterCode label1 = (InterCode)malloc(sizeof(struct InterCode_));
             label1->isBlockStarter = false;
-            label1->kind = LABEL;
+            label1->kind = I_LABEL;
             label1->u.label.labelName = newLabel();
             InterCode label2 = (InterCode)malloc(sizeof(struct InterCode_));
             label2->isBlockStarter = false;
-            label2->kind = LABEL;
+            label2->kind = I_LABEL;
             label2->u.label.labelName = newLabel();
             if (place == NULL)
                 place = newReg(NULL, newTempName());
@@ -766,7 +770,7 @@ void translate_Exp(Node *Exp, Reg place)
             {
                 InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
                 ic->isBlockStarter = false;
-                ic->kind = PLUS;
+                ic->kind = I_PLUS;
                 ic->u.binop.res = copyOperand(tmp->op);
                 ic->u.binop.op1 = (Operand)malloc(sizeof(struct Operand_));
                 ic->u.binop.op1->kind = GETADDR;
@@ -781,11 +785,11 @@ void translate_Exp(Node *Exp, Reg place)
             {
                 InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
                 ic->isBlockStarter = false;
-                ic->kind = PLUS;
+                ic->kind = I_PLUS;
                 ic->u.binop.op1 = copyOperand(tmp->op);
                 ic->u.binop.op2 = copyOperand(tmp->op);
                 ic->u.binop.op2 = (Operand)malloc(sizeof(struct Operand_));
-                ic->u.binop.op2->kind = CONSTANT;
+                ic->u.binop.op2->kind = CONSTANT_I;
                 ic->u.binop.op2->u.val_int = *constant;
                 addCodes(ic);
                 intercode(code, "%s := %s + #%d\n", tmp->interVarId, tmp->interVarId, *constant);
@@ -794,7 +798,7 @@ void translate_Exp(Node *Exp, Reg place)
             {
                 InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
                 ic->isBlockStarter = false;
-                ic->kind = ASSIGN;
+                ic->kind = I_ASSIGN;
                 ic->u.assign.left = (Operand)malloc(sizeof(struct Operand_));
                 ic->u.assign.left->kind = VALOFADDR;
                 ic->u.assign.left->u.var_name = newString(tmp->interVarId);
@@ -821,8 +825,8 @@ void translate_Exp(Node *Exp, Reg place)
                 {
                     InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
                     ic->isBlockStarter = false;
-                    ic->kind = ASSIGN;
-                    ic->u.assign.right = copyOperand(place->op);
+                    ic->kind = I_ASSIGN;
+                    ic->u.assign.left = copyOperand(place->op);
                     ic->u.assign.right = (Operand)malloc(sizeof(struct Operand_));
                     ic->u.assign.right->kind = VALOFADDR;
                     ic->u.assign.right->u.var_name = newString(tmp->interVarId);
@@ -839,22 +843,22 @@ void translate_Exp(Node *Exp, Reg place)
         // char* label2 = newLabel();
         InterCode label1 = (InterCode)malloc(sizeof(struct InterCode_));
         label1->isBlockStarter = false;
-        label1->kind = LABEL;
+        label1->kind = I_LABEL;
         label1->u.label.labelName = newLabel();
         InterCode label2 = (InterCode)malloc(sizeof(struct InterCode_));
         label2->isBlockStarter = false;
-        label2->kind = LABEL;
+        label2->kind = I_LABEL;
         label2->u.label.labelName = newLabel();
         if (place == NULL)
             place = newReg(NULL, newTempName());
         intercode(code, "%s := #0\n", place->interVarId);
         InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
         ic->isBlockStarter = false;
-        ic->kind = ASSIGN;
+        ic->kind = I_ASSIGN;
         ic->u.assign.left = (Operand)malloc(sizeof(struct Operand_));
         ic->u.assign.left->kind = VARIABLE;
         ic->u.assign.left->u.var_name = newString(place->interVarId);
-        ic->u.assign.right->kind = CONSTANT;
+        ic->u.assign.right->kind = CONSTANT_I;
         ic->u.assign.right->u.val_int = 0;
         addCodes(ic);
         translate_Cond(Exp, label1, label2);
@@ -878,9 +882,9 @@ void translate_Exp(Node *Exp, Reg place)
         place->op->u.var_name = newString(place->interVarId);
         InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
         ic->isBlockStarter = false;
-        ic->kind = SUB;
+        ic->kind = I_MINUS;
         ic->u.binop.op1 = (Operand)malloc(sizeof(struct Operand_));
-        ic->u.binop.op1->kind = CONSTANT;
+        ic->u.binop.op1->kind = CONSTANT_I;
         ic->u.binop.op1->u.val_int = 0;
         ic->u.binop.op2 = copyOperand(t1->op);
         ic->u.binop.res = copyOperand(place->op);
@@ -970,7 +974,7 @@ void translate_Exp(Node *Exp, Reg place)
                     intercode(code, "%s := %s\n", var->reg->interVarId, t1->interVarId);
                     InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
                     ic->isBlockStarter = false;
-                    ic->kind = ASSIGN;
+                    ic->kind = I_ASSIGN;
                     ic->u.assign.left = copyOperand(var->reg->op);
                     ic->u.assign.right = copyOperand(t1->op);
                     addCodes(ic);
@@ -1043,18 +1047,18 @@ Reg calOffset(Node *Exp, char *offset, Type *type, int *constant)
             intercode(code, "%s := %s * #%d\n", t1->interVarId, item->interVarId, size);
             InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
             ic->isBlockStarter = false;
-            ic->kind = STAR;
+            ic->kind = I_STAR;
             ic->u.binop.op1 = copyOperand(item->op);
             ic->u.binop.op2 = (Operand)malloc(sizeof(struct Operand_));
-            ic->u.binop.op2->kind = CONSTANT;
-            ic->u.binop.op1->u.val_int = size;
+            ic->u.binop.op2->kind = CONSTANT_I;
+            ic->u.binop.op2->u.val_int = size;
             ic->u.binop.res = copyOperand(t1->op);
             addCodes(ic);
             if (offset != NULL && strcmp(offset, ""))
             {
                 InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
                 ic->isBlockStarter = false;
-                ic->kind = PLUS;
+                ic->kind = I_PLUS;
                 ic->u.binop.op1 = copyOperand(t1->op);
                 ic->u.binop.op2 = (Operand)malloc(sizeof(struct Operand_));
                 ic->u.binop.op2->kind = VARIABLE;
@@ -1076,11 +1080,11 @@ Reg calOffset(Node *Exp, char *offset, Type *type, int *constant)
             t1->op->u.var_name = newString(t1->interVarId);
             InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
             ic->isBlockStarter = false;
-            ic->kind = STAR;
+            ic->kind = I_STAR;
             ic->u.binop.op1 = copyOperand(t1->op);
             ic->u.binop.res = copyOperand(t1->op);
             ic->u.binop.op2 = (Operand)malloc(sizeof(struct Operand_));
-            ic->u.binop.op2->kind = CONSTANT;
+            ic->u.binop.op2->kind = CONSTANT_I;
             ic->u.binop.op2->u.val_int = size;
             addCodes(ic);
             intercode(code, "%s := %s * #%d\n", t1->interVarId, item->reg->interVarId, size);
@@ -1088,7 +1092,7 @@ Reg calOffset(Node *Exp, char *offset, Type *type, int *constant)
             {
                 InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
                 ic->isBlockStarter = false;
-                ic->kind = PLUS;
+                ic->kind = I_PLUS;
                 ic->u.binop.op1 = copyOperand(t1->op);
                 ic->u.binop.op2 = (Operand)malloc(sizeof(struct Operand_));
                 ic->u.binop.op2->kind = VARIABLE;
@@ -1235,25 +1239,25 @@ void copyArr(char *dst, char *src)
     intercode(code, "%s := #0\n", idx->interVarId);
     InterCode label1 = (InterCode)malloc(sizeof(InterCode_));
     label1->isBlockStarter = false;
-    label1->kind = LABEL;
+    label1->kind = I_LABEL;
     label1->u.label.labelName = newLabel();
     InterCode label2 = (InterCode)malloc(sizeof(InterCode_));
     label2->isBlockStarter = false;
-    label2->kind = LABEL;
+    label2->kind = I_LABEL;
     label2->u.label.labelName = newLabel();
     InterCode label3 = (InterCode)malloc(sizeof(InterCode_));
     label3->isBlockStarter = false;
-    label3->kind = LABEL;
+    label3->kind = I_LABEL;
     label3->u.label.labelName = newLabel();
     intercode(code, "LABEL %s :\n", label1->u.label.labelName);
     addCodes(label1);
 
     InterCode ific = (InterCode)malloc(sizeof(InterCode_));
     ific->isBlockStarter = true;
-    ific->kind = COND;
+    ific->kind = I_COND;
     ific->u.cond.op1 = copyOperand(idx->op);
     ific->u.cond.op2 = (Operand)malloc(sizeof(struct Operand_));
-    ific->u.cond.op2->kind = CONSTANT;
+    ific->u.cond.op2->kind = CONSTANT_I;
     ific->u.cond.op2->u.val_int = range;
     ific->u.cond.oper = newString("<");
     ific->u.cond.label = label2;
@@ -1262,7 +1266,7 @@ void copyArr(char *dst, char *src)
     label2->isBlockStarter = true;
     InterCode jump = (InterCode)malloc(sizeof(InterCode_));
     jump->isBlockStarter = true;
-    jump->kind = JMP;
+    jump->kind = I_JMP;
     jump->u.jump.targetCode = label3;
     jump->u.jump.targetLabel = newString(label3->u.label.labelName);
     addCodes(jump);

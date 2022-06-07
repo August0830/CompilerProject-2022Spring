@@ -74,7 +74,7 @@ typedef Type_* Type;
 
 typedef struct Operand_* Operand;
 struct Operand_ {
-    enum {VARIABLE,CONSTANT,ADDR,GETADDR,VALOFADDR} kind;
+    enum {VARIABLE,CONSTANT,CONSTANT_F,CONSTANT_I,ADDR,GETADDR,VALOFADDR} kind;
     union{
         char* var_name;
         int val_int;
@@ -145,25 +145,21 @@ struct RegDescriptor_{
 typedef struct InterCode_* InterCode;
 struct InterCode_ {
     enum {
-        ASSIGN, 
-        PLUS,
-        SUB,
-        STAR,
-        DIV,
-        AND,
-        OR,
-        RELOP,
-        NOT,
-        MINUS,
-        DEC,
-        COND,
-        LABEL,
-        JMP,
-        FUNCINFO,
-        PARAM,
-        ARG,
-        CALL,  
-        RETURN
+        I_ASSIGN, 
+        I_PLUS,
+        I_SUB,
+        I_STAR,
+        I_DIV,
+        I_MINUS,
+        I_DEC,
+        I_COND, 
+        I_LABEL,
+        I_JMP,
+        I_FUNCINFO,
+        I_PARAM,
+        I_ARG,
+        I_CALL,  
+        I_RETURN
     } kind;
     union{
         struct {Operand right,left;} assign;

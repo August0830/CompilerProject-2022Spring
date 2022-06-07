@@ -989,7 +989,7 @@ void addFunc(FuncHead f)
 
 void prepareFunc(FILE* fp)
 {
-    assert(fp!=NULL);
+    //assert(fp!=NULL);
     //fprintf(fp,"Try to preload read and write\n");
     Type type = (Type)malloc(sizeof(Type_));
     type->kind = BASIC;

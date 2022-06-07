@@ -11,9 +11,6 @@ void copyArr(char* dst, char* src);
 Reg reverse(Reg head);
 void addCodes(InterCode ic);
 Operand copyOperand(Operand op);
-void addLineNo(char* varName,int lineNo);
-VarDescriptor searchVarInfo(char* varName);
-VarDescriptor addVarUseInfo(char* varName);
 
 void prepareIntermediate(FILE* ptr);
 void generateInterCode(Node* node);
