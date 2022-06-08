@@ -19,41 +19,74 @@ write:
     move $v0, $0
     jr $ra
 
-# NORMAL INSTRUCTION 10
+# NORMAL INSTRUCTION 9
+main:
+    addi $sp,$sp,-4
+    sw $fp 0($sp)
+    move $fp, $sp
     addi $sp, $sp, -8
     li $8, 0
     addi $8, -1
-    lw $11, t2
     li $9, 1
     li $10, 4
     mul $11,$9,$10
-    lw $12, v0
-    lw $13, t2
-    lw $14, t3
-    sub $14,$12,$13
-    lw $15, v1
-    sw $15,0($14)
-    lw $16, v3
-    lw $17, v1
-    addi $16,$17,3
-    lw $20, t7
-    li $18, 0
-    li $19, 4
-    mul $20,$18,$19
-    lw $21, v0
-    lw $22, t7
-    lw $23, t8
-    sub $23,$21,$22
-    lw $24, v3
-    sw $24,0($23)
-    lw $27, t10
-    li $25, 0
-    li $26, 4
-    mul $27,$25,$26
-    lw $28, v0
-    lw $29, t10
-    lw $30, t11
-    sub $30,$28,$29
-    lw $31, v4
-    lw $31,0($30)
-# NORMAL INSTRUCTION 14
+    move $12,$fp
+    sub $13,$12,$11
+    sw $8,0($13)
+    addi $12,$8,3
+    addi $sp,$sp,-4
+    sw $13,8($fp)
+#save t3
+    li $9, 0
+    li $10, 4
+    mul $13,$9,$10
+    move $9,$fp
+    sub $10,$9,$13
+    sw $12,0($10)
+    addi $sp,$sp,-4
+    sw $10,12($fp)
+#save t8
+    li $9, 0
+    li $10, 4
+    mul $9,$9,$10
+    addi $sp,$sp,-4
+    sw $9,16($fp)
+#save t12
+    move $9,$fp
+    lw $10,16($fp)
+#load t12
+    sub $9,$9,$10
+    addi $sp,$sp,-4
+    sw $9,20($fp)
+#save t13
+    lw $9,0($9)
+    addi $sp,$sp,-4
+    sw $9,24($fp)
+#save t9
+    sw $10,16($fp)
+#save t12
+    lw $9,24($fp)
+#load t9
+    li $9, 4
+    mul $10,$9,$9
+    addi $sp,$sp,-4
+    sw $10,28($fp)
+#save v4
+    addi $sp,$sp,-4
+    sw $10,32($fp)
+#save v5
+    lw $10,28($fp)
+#load v4
+    move $10, $10
+    sw $10,28($fp)
+#save v4
+    sw $9,24($fp)
+#save t9
+    lw $9,32($fp)
+#load v5
+    li $10, 2
+    div $9, $10
+    mflo $8
+    move $v0,$0
+    jr $ra
+# NORMAL INSTRUCTION 13

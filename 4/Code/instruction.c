@@ -1,5 +1,5 @@
 #include "instruction.h"
-#define REGCNT 18
+#define REGCNT 6
 #define mipscode(code,args...) fprintf(code,args)
 // #define UNLIMITREG
 #define SPACE "    "
@@ -88,14 +88,21 @@ void divideBlock(InterCode code)
         code->kind==I_STAR||
         code->kind==I_DIV)
         {
-            addLineNoForBlock(code->u.binop.op1->u.var_name,line);
-            addLineNoForBlock(code->u.binop.op2->u.var_name,line);
-            addLineNoForBlock(code->u.binop.res->u.var_name,line);
+            if(code->u.binop.op1->kind==VARIABLE)
+                addLineNoForBlock(code->u.binop.op1->u.var_name,line);
+            if(code->u.binop.op2->kind==VARIABLE)
+                addLineNoForBlock(code->u.binop.op2->u.var_name,line);
+            // if(code->u.binop.res->kind==VARIABLE)
+            //     addLineNoForBlock(code->u.binop.res->u.var_name,line);
+            // killed
         }
         else if(code->kind==I_ASSIGN)
         {
-            addLineNoForBlock(code->u.assign.left->u.var_name,line);
-            addLineNoForBlock(code->u.assign.right->u.var_name,line);
+            // if(code->u.assign.left->kind==VARIABLE)
+            //     addLineNoForBlock(code->u.assign.left->u.var_name,line);
+            // killed
+            if(code->u.assign.right->kind==VARIABLE)
+                addLineNoForBlock(code->u.assign.right->u.var_name,line);
         }
         code=code->next;
     }
@@ -115,10 +122,13 @@ void addLineNoForBlock(char *varName, int lineNo)
     ptr->right->left = ptr;
     ptr->right->u.lineNo = lineNo;
     ptr->right->fpOffset = -1;
+    ptr->right->isAddr = false;
 }
 
 VarDescriptor searchVarInfoForBlock(char *varName)
 {
+    if(varName==NULL)
+        return NULL;
     VarDescriptor p = varUseInfo;
     while (p != NULL)
     {
@@ -128,6 +138,8 @@ VarDescriptor searchVarInfoForBlock(char *varName)
         }
         p = p->left;
     }
+    if(strcmp(varName,""))
+        p = addVarUseInfoForBlock(varName);
     return p;
 }
 
@@ -140,6 +152,7 @@ VarDescriptor addVarUseInfoForBlock(char *varName)
         varUseInfo->right = NULL;
         varUseInfo->u.varName = newString(varName);
         varUseInfo->fpOffset=-1;
+        varUseInfo->isAddr=false;
         return varUseInfo;
     }
     else
@@ -148,6 +161,7 @@ VarDescriptor addVarUseInfoForBlock(char *varName)
         p->left = NULL;
         p->right = NULL;
         p->fpOffset = -1;
+        p->isAddr = false;
         p->u.varName = newString(varName);
         p->left = varUseInfo;
         varUseInfo = p;
@@ -160,12 +174,19 @@ void translateInstr()
     InterCode ptr = codes;
     while(ptr!=NULL)
     {
-        InterCode tmp = ptr;
-        divideBlock(tmp);
         if(ptr->isBlockStarter)
+        {
             lineNo = 0;
+            InterCode tmp = ptr;
+            while(tmp!=NULL && tmp->isBlockStarter)
+                tmp = tmp->next;
+            if(tmp!=NULL)
+                divideBlock(tmp);
+        }    
         else
+        {
             lineNo++;
+        }    
         if(isArrBlock(ptr))
         {
             translateInstrArr(ptr);
@@ -329,7 +350,7 @@ void translateNormalInstr(InterCode code)
         }
         else//both constant
         {
-            char* reg = ensure(newString(""),true);
+            char* reg = ensure(code->u.binop.res->u.var_name,true);
              int sign = 1;
             if(code->kind==I_SUB)
                 sign = -1;
@@ -354,18 +375,18 @@ void translateNormalInstr(InterCode code)
         }
         else if(code->u.binop.op1->kind == VARIABLE)
         {
-            char* reg = ensure(newString(""),false);
+            char* reg = ensure("",false);
             char* regRes = ensure(code->u.binop.res->u.var_name,true);
             char* reg1 = ensure(code->u.binop.op1->u.var_name,false);
             if(code->u.binop.op2->kind==CONSTANT_I)
                 mipscode(instr,"    li %s, %d\n",reg,code->u.binop.op2->u.val_int);
             else
                 mipscode(instr,"    li %s, %f\n",reg,code->u.binop.op2->u.val_float);
-            mipscode(instr,"mul %s,%s,%s\n",regRes,reg1,reg);
+            mipscode(instr,"    mul %s,%s,%s\n",regRes,reg1,reg);
         }
         else if(code->u.binop.op2->kind == VARIABLE)
         {
-            char* reg = ensure(newString(""),false);
+            char* reg = ensure("",false);
             char* regRes = ensure(code->u.binop.res->u.var_name,true);
             char* reg2 = ensure(code->u.binop.op2->u.var_name,false);
             if(code->u.binop.op1->kind==CONSTANT_I)
@@ -376,8 +397,8 @@ void translateNormalInstr(InterCode code)
         }   
         else
         {
-            char* reg = ensure(newString(""),false);
-            char* reg1 = ensure(newString(""),false);
+            char* reg = ensure("",false);
+            char* reg1 = ensure("",false);
             char* regRes = ensure(code->u.binop.res->u.var_name,true);
             if(code->u.binop.op1->kind==CONSTANT_I)
                 mipscode(instr,"    li %s, %d\n",reg,code->u.binop.op1->u.val_int);
@@ -402,13 +423,13 @@ void translateNormalInstr(InterCode code)
         }
         else if(code->u.binop.op1->kind == VARIABLE)
         {
-            char* reg1 = ensure(newString(""),false);
+            char* reg2 = ensure(newString(""),false);
             char* regRes = ensure(code->u.binop.res->u.var_name,true);
-            char* reg2 = ensure(code->u.binop.op1->u.var_name,false);
+            char* reg1 = ensure(code->u.binop.op1->u.var_name,false);
             if(code->u.binop.op2->kind==CONSTANT_I)
-                mipscode(instr,"    li %s, %d\n",reg1,code->u.binop.op2->u.val_int);
+                mipscode(instr,"    li %s, %d\n",reg2,code->u.binop.op2->u.val_int);
             else
-                mipscode(instr,"    li %s, %f\n",reg1,code->u.binop.op2->u.val_float);
+                mipscode(instr,"    li %s, %f\n",reg2,code->u.binop.op2->u.val_float);
             mipscode(instr,"    div %s, %s\n",reg1,reg2);
             mipscode(instr,"    mflo %s\n",regRes);
         }
@@ -443,7 +464,10 @@ void translateNormalInstr(InterCode code)
 }
     else if(code->kind == I_DEC)
     {
-        mipscode(instr,"    addi $sp, $sp, -%d\n",code->u.arr.size);
+        mipscode(instr,"    addi $sp, $sp, -%d\n",code->u.arr.size);   
+        VarDescriptor var = addVarUseInfoForBlock(code->u.arr.arr->u.var_name);
+        var->fpOffset = fpOffset;
+        var->isAddr = true;
         fpOffset+=code->u.arr.size;
         //record with VarDescriptor todo
     }
@@ -465,14 +489,28 @@ char* ensure(char* x,bool isKill)
     #else
     reg = allocate(x);
     #endif
-    if(strcmp(x,"")||isKill)
+    if(strcmp(x,"")&&!isKill)
     {
         #ifdef UNLIMITREG
         mipscode(instr,"    lw %s, %s\n",reg,x);
         #else
         VarDescriptor var = searchVarInfoForBlock(x);
         assert(var!=NULL);
-        mipscode(instr,"    lw %s,%d($fp)\n",reg,var->fpOffset);
+        if(var->fpOffset!=-1)
+        {
+            if(var->isAddr)
+            {
+                if(var->fpOffset==0)
+                    mipscode(instr,"    move %s,$fp\n",reg);
+                else
+                    mipscode(instr,"    sub %s,$fp,%d\n",reg,var->fpOffset);
+            }
+            else
+            {
+                mipscode(instr,"    lw %s,%d($fp)\n",reg,var->fpOffset);
+                mipscode(instr,"#load %s\n",x);
+            }
+        }
         #endif
     }
     return reg;
@@ -487,7 +525,9 @@ char* allocate(char* x)
         {
             regDescriptor[i]->free = false;
             if(strcmp(x,""))
+            {
                 regDescriptor[i]->varStore = newString(x);
+            } //constant can be grabbed   
             sprintf(reg,"$%d",i+8);
             return reg;
         }
@@ -499,30 +539,54 @@ char* allocate(char* x)
     int regNum = 0;
     for(int i=0;i<REGCNT;++i)
     {
-        VarDescriptor p = searchVarInfoForBlock(regDescriptor[i]->varStore);
-        if(p!=NULL)
+        if(regDescriptor[i]->free)
+            continue;
+        else if(regDescriptor[i]->varStore==NULL)
         {
-            if(p->right->u.lineNo == lineNo)
+            regDescriptor[i]->free=true;
+            //clean and move on to next to find
+        }    
+        else
+        {
+            VarDescriptor p = searchVarInfoForBlock(regDescriptor[i]->varStore);
+            if(p==NULL)
+                continue;
+            if(p->right!=NULL)
             {
-                if(p->right->right!=NULL)
+                
+                if(p->right->u.lineNo <= lineNo)
                 {
-                    VarDescriptor tmp = p->right;
-                    p->right->right->left = p;
-                    p->right = tmp->right;
-                    free(tmp);
-                }//delete the record at this line
+                    while(p->right->right!=NULL)
+                    {
+                        VarDescriptor tmp = p->right;
+                        p->right->right->left = p;
+                        p->right = tmp->right;
+                        free(tmp);
+                    }//delete the record at this line
+                }
+                if(p->right->u.lineNo>nextUser)
+                {
+                    target = p;
+                    nextUser = p->right->u.lineNo;
+                    regDes = regDescriptor[i];
+                    //regDes->varStore = NULL;
+                    regNum = i;
+                }
             }
-            if(p->right->u.lineNo>nextUser)
+            else
             {
-                target = p;
-                nextUser = p->right->u.lineNo;
-                regDes = regDescriptor[i];
+                target  = p;
                 regNum = i;
+                regDes = regDescriptor[i];
+                //regDes->varStore=NULL;
+                break;
             }
         }
     }
     sprintf(reg,"$%d",regNum+8);
     spill(regDes,reg);
+    if(strcmp(x,""))
+        regDes->varStore = newString(x);
     return reg;
 }
 
@@ -531,12 +595,20 @@ void spill(RegDescriptor regDes,char* reg)
     //write back to mem(stack)
     //user Reg to record the mem addr
     VarDescriptor var = searchVarInfoForBlock(regDes->varStore);
-    assert(var!=NULL);
+    if(var==NULL)
+        return;
     if(var->fpOffset==-1)
     {
         mipscode(instr,"    addi $sp,$sp,-4\n");
         var->fpOffset = fpOffset;
         fpOffset+=4;
     }
-    mipscode(instr,"    sw %s,%d($fp)\n",reg,var->fpOffset);
+
+    //reg store address no need to store,just cover
+    if(!var->isAddr)
+    {
+        mipscode(instr,"    sw %s,%d($fp)\n",reg,var->fpOffset);   
+        mipscode(instr,"#save %s\n",var->u.varName);
+    }
+    regDes->varStore = NULL;
 }

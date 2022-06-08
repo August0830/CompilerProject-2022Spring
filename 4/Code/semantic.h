@@ -135,6 +135,7 @@ struct VarDescriptor_{
         int lineNo;
     } u;
     int fpOffset;//mem notice on stack
+    bool isAddr;
 } VarDescriptor_;
 
 typedef struct RegDescriptor_* RegDescriptor;
