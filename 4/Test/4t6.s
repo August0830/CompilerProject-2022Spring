@@ -20,32 +20,40 @@ write:
     jr $ra
 
 # NORMAL INSTRUCTION 10
-# NORMAL INSTRUCTION 5
-    lw $10, t2
-    li $8, 1
-    li $9, 4
-    mul $10,$8,$9
-    lw $11, t3
-    lw $12, t2
-#assign to val
-    li $13, 31833232 #?
-    addi $13, 3
-    lw $16, t7
-    li $14, 0
-    li $15, 4
-    mul $16,$14,$15
-    lw $17, t8
-    lw $18, t7
-    lw $19, t8
-    lw $20, v3
-    move $19, $20
-    lw $23, t10
-    li $21, 0
-    li $22, 4
-    mul $23,$21,$22
-    lw $24, t11
-    lw $25, t10
-    lw $26, v4
-    lw $27, t11
-    move $26, $27
+    addi $sp, $sp, -8
+    li $8, 0
+    addi $8, -1
+    lw $11, t2
+    li $9, 1
+    li $10, 4
+    mul $11,$9,$10
+    lw $12, v0
+    lw $13, t2
+    lw $14, t3
+    sub $14,$12,$13
+    lw $15, v1
+    sw $15,0($14)
+    lw $16, v3
+    lw $17, v1
+    addi $16,$17,3
+    lw $20, t7
+    li $18, 0
+    li $19, 4
+    mul $20,$18,$19
+    lw $21, v0
+    lw $22, t7
+    lw $23, t8
+    sub $23,$21,$22
+    lw $24, v3
+    sw $24,0($23)
+    lw $27, t10
+    li $25, 0
+    li $26, 4
+    mul $27,$25,$26
+    lw $28, v0
+    lw $29, t10
+    lw $30, t11
+    sub $30,$28,$29
+    lw $31, v4
+    lw $31,0($30)
 # NORMAL INSTRUCTION 14

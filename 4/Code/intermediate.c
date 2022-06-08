@@ -877,12 +877,12 @@ void translate_Exp(Node *Exp, Reg place)
         if (place->op == NULL)
         {
             place->op = (Operand)malloc(sizeof(struct Operand_));
-            place->op->kind = t1->op->kind;
+            place->op->kind = VARIABLE;
         }
         place->op->u.var_name = newString(place->interVarId);
         InterCode ic = (InterCode)malloc(sizeof(struct InterCode_));
         ic->isBlockStarter = false;
-        ic->kind = I_MINUS;
+        ic->kind = I_SUB;
         ic->u.binop.op1 = (Operand)malloc(sizeof(struct Operand_));
         ic->u.binop.op1->kind = CONSTANT_I;
         ic->u.binop.op1->u.val_int = 0;

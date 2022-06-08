@@ -134,6 +134,7 @@ struct VarDescriptor_{
         char* varName;
         int lineNo;
     } u;
+    int fpOffset;//mem notice on stack
 } VarDescriptor_;
 
 typedef struct RegDescriptor_* RegDescriptor;
@@ -150,7 +151,6 @@ struct InterCode_ {
         I_SUB,
         I_STAR,
         I_DIV,
-        I_MINUS,
         I_DEC,
         I_COND, 
         I_LABEL,
@@ -164,7 +164,6 @@ struct InterCode_ {
     union{
         struct {Operand right,left;} assign;
         struct {Operand res,op1,op2;} binop;
-        struct {Operand res,op1;} singleop;
         struct {InterCode trueLabel,falseLabel,cond;} condition;
         struct {InterCode compst; char* funcName;} func;
         struct {Operand arr; int size;} arr;
