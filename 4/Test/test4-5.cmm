@@ -1,0 +1,14 @@
+int main()
+{
+    int a=1,b=2,c=3,d=4;
+    int res1,res2,res3,res4,res5,res6,res7;
+    res1 = a+b;
+    res2 = b+1;
+    res3 = b-a;
+    res4 = b-2;
+    res5 = a*b;
+    res6 = c*2;
+    res5 = res6/2;
+    res7 = res6/c;
+    return 0;
+}

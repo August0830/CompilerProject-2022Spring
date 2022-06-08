@@ -1,0 +1,15 @@
+FUNCTION mod :
+PARAM v0
+PARAM v1
+t3 := v0 / v1
+t2 := t3 * v1
+t0 := v0 - t2
+RETURN t0
+FUNCTION main :
+v2 := #10
+v3 := #3
+ARG v3
+ARG v2
+v4 := CALL mod
+t7 := #0
+RETURN t7

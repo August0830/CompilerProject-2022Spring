@@ -1,0 +1,19 @@
+FUNCTION set :
+PARAM v0
+v1 := #1
+t0 := v0 
+*t0 := v1
+v2 := #2
+t1 := v0 
+t1 := t1 + #4
+*t1 := v2
+t2 := #1
+RETURN t2
+FUNCTION main :
+DEC v3 24
+t3 := &v3 
+v5 := *t3
+ARG v5
+v4 := CALL set
+t4 := #0
+RETURN t4

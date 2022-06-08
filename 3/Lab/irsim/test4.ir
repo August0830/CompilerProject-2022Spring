@@ -1,0 +1,9 @@
+FUNCTION add :
+PARAM v0
+t3 := v0 
+t1 := *t3
+t4 := v0 
+t4 := t4 + #4
+t2 := *t4
+t0 := t1 + t2
+RETURN t0
