@@ -126,6 +126,12 @@ typedef struct _FieldList_{
 
 typedef _FieldList* FieldList;
 
+typedef struct StringNode_* StringNode;
+struct StringNode_{
+    StringNode next;
+    char* string;
+} StringNode_;
+
 typedef struct VarDescriptor_* VarDescriptor;
 struct VarDescriptor_{
     VarDescriptor left;
