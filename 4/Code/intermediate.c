@@ -159,6 +159,7 @@ void translate_Exp_Func(Node *Exp, Reg place)
             if (!strcmp(funcInfo->funcName, "write"))
             {
                 intercode(code, "WRITE %s\n", argList->interVarId);
+                //
             }
             else
             {

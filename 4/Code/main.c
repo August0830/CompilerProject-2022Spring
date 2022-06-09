@@ -49,6 +49,7 @@ int main(int argc,char**argv){
     initForInst(output);
     if(lexError == 0 && synError == 0){        
         printNodeTree(root,0);
+        //todo
         traverseTree(root);
         if(!hasStruct)
         {

@@ -10,6 +10,11 @@ struct IntStack_{
 void translateInstr();
 void translateNormalInstr(InterCode code);
 void translateInstrArr(InterCode code);
+void translateCond(InterCode code);
+void translateFunc(InterCode code);
+void translateRet(InterCode code);
+void translateCALL(InterCode args,int argsCnt,InterCode call);
+void translateParam(InterCode param,int paramCnt);
 void initForInst(FILE *ptr);
 void initCodeFile(FILE* ptr);
 char* ensure(char* x,bool isKill);

@@ -1,5 +1,6 @@
 #include "instruction.h"
-#define REGCNT 6
+#define REGCNT 22
+#define REGOFFSET 4
 #define mipscode(code,args...) fprintf(code,args)
 // #define UNLIMITREG
 #define SPACE "    "
@@ -120,6 +121,7 @@ void addLineNoForBlock(char *varName, int lineNo)
     }
     ptr->right = (VarDescriptor)malloc(sizeof(VarDescriptor_));
     ptr->right->left = ptr;
+    ptr->right->right=NULL;
     ptr->right->u.lineNo = lineNo;
     ptr->right->fpOffset = -1;
     ptr->right->isAddr = false;
@@ -197,6 +199,52 @@ void translateInstr()
         {
             translateNormalInstr(ptr);
         }    
+        else if(ptr->kind==I_LABEL)
+        {
+            mipscode(instr,"%s:\n",ptr->u.label.labelName);
+        }
+        else if(ptr->kind==I_JMP)
+        {
+            mipscode(instr,"    j %s\n",ptr->u.jump.targetLabel);
+        }
+        else if(ptr->kind==I_COND)
+        {
+            translateCond(ptr);
+        }
+        else if(ptr->kind == I_FUNCINFO)
+        {
+            translateFunc(ptr);
+        }
+        else if(ptr->kind == I_RETURN)
+        {
+            translateRet(ptr);
+        }
+        else if(ptr->kind==I_ARG)
+        {
+            InterCode args = ptr;
+            int argsCnt = 1;
+            while(ptr->kind!=I_CALL)
+            {
+                ptr=ptr->next;
+                argsCnt++;
+            }    
+            
+        }
+        else if(ptr->kind==I_CALL)
+        {
+            //no args
+        }
+        else if(ptr->kind==I_PARAM)
+        {
+            InterCode param = ptr;
+            int cnt=1;
+            while(ptr->next->kind!=I_PARAM)
+            {
+                cnt++;
+                ptr=ptr->next;
+            }
+            translateParam(param,cnt);
+        }
         else
         {
             mipscode(instr,"# NORMAL INSTRUCTION %d\n",ptr->kind);
@@ -219,6 +267,151 @@ bool isArrBlock(InterCode code)
             return true;
     }
     return false;
+}
+
+void translateParam(InterCode param,int paramCnt)
+{
+    for(int i=0;i<paramCnt;++i)
+    {
+        if(i>4)
+        {
+            VarDescriptor var = searchVarInfoForBlock(param->u.par.varName);
+            asssert(var!=NULL);
+            var->fpOffset = (i-3)*-4;
+        }
+        else
+        {
+            regDescriptor[i]->free=false;
+            regDescriptor[i]->varStore = newString(param->u.par.varName);
+        }
+        param=param->next;
+    }
+}
+
+void translateCALL(InterCode args,int argsCnt,InterCode call)
+{
+    //args prepare
+    if(args!=NULL && argsCnt!=0)
+    {
+        int cnt=argsCnt;
+        if(cnt>4)
+            mipscode(instr,"  addi $sp,$sp,-%d\n",4*(cnt-4));
+        while(cnt>4)
+        {
+            char* reg = ensure(args->u.par.varName,false);
+            mipscode(instr,"  sw %s,%d($sp)\n",reg,4*(cnt-5));
+            cnt--;
+            args = args->next;
+        }
+        while(cnt>0 && args->kind!=I_CALL)
+        {
+            char* reg = ensure(args->u.par.varName,false);
+            mipscode(instr,"    move $a%d,%s\n",cnt-1);
+            cnt--;
+            args=args->next;
+        }
+    }
+
+    //reg
+    for(int i=4;i<REGCNT;++i)
+    {
+        if(!regDescriptor[i]->free && !regDescriptor[i]->varStore!=NULL)
+        {
+            char* reg = (char*)malloc(sizeof(char)*10);
+            sprintf(reg,"$%d",i+REGOFFSET);
+            spill(regDescriptor[i],reg);
+        }
+    }
+
+    pushIntStack(fpOffset);
+    fpOffset=0;
+    mipscode(instr,"    addi $sp,$sp,-4\n");
+    mipscode(instr,"    sw $ra,0($sp)\n");
+    mipscode(instr,"    jal %s\n",call->u.callInfo.func);
+    mipscode(instr,"    lw $ra,0($sp)\n");
+    mipscode(instr,"    addi $sp,$sp,4\n");
+    char* reg = ensure(call->u.callInfo.res->u.var_name);
+    if(argsCnt>4)
+        mipscode(instr,"  addi $sp,$sp,%d\n",4*(argCnt-4));
+    fpOffset = popIntStack();
+    mipscode(instr,"  move %s,$v0\n",reg);
+}
+
+void translateFunc(InterCode code)
+{
+    mipscode(instr,"%s:\n",code->u.funInfo.funcName);
+    mipscode(instr,"    addi $sp,$sp,-4\n");
+    mipscode(instr,"    sw $fp 0($sp)\n");
+    mipscode(instr,"    move $fp, $sp\n");
+}
+
+void translateRet(InterCode code)
+{
+    //prepare work
+    mipscode(instr,"  addi $sp,$sp,%d\n",fpOffset);
+    mipscode(instr,"  lw $fp,0($sp)\n");
+    fpOffset = popIntStack();
+    for(int i=0;i<REGCNT;++i)//including args
+    {
+        regDescriptor[i]->free=true;
+        if(regDescriptor[i]->varStore!=NULL)
+            free(regDescriptor[i]->varStore);
+        regDescriptor[i]->varStore=NULL;
+    }
+}
+
+void translateCond(InterCode code)
+{
+    char* reg1=NULL,*reg2=NULL;
+    if(code->u.cond.op1->kind==VARIABLE)
+        reg1 = ensure(code->u.cond.op1->u.var_name,false);
+    else if(code->u.cond.op1->kind==CONSTANT_I)
+    {
+        reg1 = ensure("",false);
+        mipscode(instr,"    li %s,%d\n",reg1,code->u.cond.op1->u.val_int);
+    }
+    else if(code->u.cond.op1->kind==CONSTANT_F)
+    {
+        reg1 = ensure("",false);
+        mipscode(instr,"    li %s,%f\n",reg1,code->u.cond.op1->u.val_float);
+    }
+    else
+    {
+        printf("error in cond reg1\n");
+    }
+
+    if(code->u.cond.op2->kind==VARIABLE)
+        reg2 = ensure(code->u.cond.op2->u.var_name,false);
+    else if(code->u.cond.op2->kind==CONSTANT_I)
+    {
+        reg2 = ensure("",false);
+        mipscode(instr,"    li %s,%d\n",reg2,code->u.cond.op2->u.val_int);
+    }
+    else if(code->u.cond.op2->kind==CONSTANT_F)
+    {
+        reg2 = ensure("",false);
+        mipscode(instr,"    li %s,%f\n",reg2,code->u.cond.op2->u.val_float);
+    }
+    else
+    {
+        printf("error in cond reg2\n");
+    }
+    char opInstr[10] = {};
+    char* label = newString(code->u.cond.label->u.label.labelName);
+    if(!strcmp(code->u.cond.oper,"=="))
+        sprintf(opInstr,"beq");
+    else if(!!strcmp(code->u.cond.oper,"!="))
+        sprintf(opInstr,"bne");
+    else if(!!strcmp(code->u.cond.oper,">"))
+        sprintf(opInstr,"bgt");
+    else if(!!strcmp(code->u.cond.oper,"<"))
+        sprintf(opInstr,"blt");
+    else if(!!strcmp(code->u.cond.oper,">="))
+        sprintf(opInstr,"bge");
+    else if(!!strcmp(code->u.cond.oper,"<="))
+        sprintf(opInstr,"ble");
+
+    mipscode(instr,"    %s %s,%s,%s\n",opInstr,reg1,reg2,label);
 }
 
 void translateInstrArr(InterCode code)
@@ -251,8 +444,23 @@ void translateInstrArr(InterCode code)
         {
             if(!strcmp(code->u.assign.left->u.var_name,code->prev->u.binop.res->u.var_name))
             {
-                char* regR = ensure(code->u.assign.right->u.var_name,false);
-                mipscode(instr,"    sw %s,0(%s)\n",regR,res);
+                if(code->u.assign.right->kind == VARIABLE)
+                {
+                    char* regR = ensure(code->u.assign.right->u.var_name,false);
+                    mipscode(instr,"    sw %s,0(%s)\n",regR,res);
+                }
+                else if(code->u.assign.right->kind==CONSTANT_I)
+                {
+                    char* regR = ensure("",false);
+                    mipscode(instr,"    li %s, %d\n",regR,code->u.assign.right->u.val_int);
+                    mipscode(instr,"    sw %s,0(%s)\n",regR,res);
+                }
+                else if(code->u.assign.right->kind==CONSTANT_F)
+                {
+                    char* regR = ensure("",false);
+                    mipscode(instr,"    li %s, %f\n",regR,code->u.assign.right->u.val_float);
+                    mipscode(instr,"    sw %s,0(%s)\n",regR,res);
+                }
             }
             else
                 printf("error in arr block 3\n");
@@ -484,7 +692,7 @@ char* ensure(char* x,bool isKill)
     {
         if(!regDescriptor[i]->free && regDescriptor[i]->varStore!=NULL && !strcmp(regDescriptor[i]->varStore,x))
         {
-            sprintf(reg,"$%d",i+8);
+            sprintf(reg,"$%d",i+REGOFFSET);
             return reg;
         }
     }
@@ -523,7 +731,7 @@ char* ensure(char* x,bool isKill)
 char* allocate(char* x)
 {
     char* reg = (char*)malloc(sizeof(char)*10);
-    for(int i=0;i<REGCNT;++i)
+    for(int i=4;i<REGCNT;++i)
     {
         if (regDescriptor[i]->free)
         {
@@ -537,7 +745,7 @@ char* allocate(char* x)
                 free(regDescriptor[i]->varStore);
                 regDescriptor[i]->varStore=NULL;
             } 
-            sprintf(reg,"$%d",i+8);
+            sprintf(reg,"$%d",i+REGOFFSET);
             return reg;
         }
     }
@@ -546,7 +754,7 @@ char* allocate(char* x)
     VarDescriptor target = NULL;
     RegDescriptor regDes = NULL;
     int regNum = 0;
-    for(int i=0;i<REGCNT;++i)
+    for(int i=4;i<REGCNT;++i)
     {
         if(regDescriptor[i]->varStore==NULL)
         {
@@ -585,7 +793,7 @@ char* allocate(char* x)
                     //regDes->varStore = NULL;
                     regNum = i;
                 }
-                else//will not appear anymore
+                else if(p->right==NULL)//will not appear anymore
                 {
                     target  = p;
                     regNum = i;
@@ -603,7 +811,7 @@ char* allocate(char* x)
             }
         }
     }
-    sprintf(reg,"$%d",regNum+8);
+    sprintf(reg,"$%d",regNum+REGOFFSET);
     spill(regDes,reg);
     if(strcmp(x,""))
         regDes->varStore = newString(x);
